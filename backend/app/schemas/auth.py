@@ -2,9 +2,10 @@
 from app.schemas.user import UserRead
 from pydantic import BaseModel
 
-class Token(BaseModel):
+class TokenWithUser(BaseModel):
     access_token: str
     token_type: str
+    user: "UserOut"
 
 class TokenData(BaseModel):
     user_id: int | None = None  

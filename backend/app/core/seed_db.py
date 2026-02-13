@@ -21,6 +21,11 @@ PERMISSIONS = [
     "role:read",
     "role:update",
     "role:delete",
+    # Permissions
+    "permission:create",
+    "permission:read",
+    "permission:update",
+    "permission:delete",
 ]
 
 def seed_permissions():
@@ -35,23 +40,23 @@ def seed_permissions():
 
         db.commit()
 
-# Create admin role with all permissions (if not exists)
-def seed_admin_role():
+# Create superuser role with all permissions (if not exists)
+def seed_superuser_role():
     from app.models.user import Role
     from app.models.permission import RolePermission
 
     with Session(engine) as db:
-        admin_role = db.exec(
-            select(Role).where(Role.name == "admin")
+        superuser_role = db.exec(
+            select(Role).where(Role.name == "superuser")
         ).first()
 
-        if not admin_role:
-            admin_role = Role(name="admin")
-            db.add(admin_role)
+        if not superuser_role:
+            superuser_role = Role(name="superuser")
+            db.add(superuser_role)
             db.commit()
-            db.refresh(admin_role)
+            db.refresh(superuser_role)
 
-        # Assign all permissions to admin role
+        # Assign all permissions to superuser role
         for perm_name in PERMISSIONS:
             permission = db.exec(
                 select(Permission).where(Permission.name == perm_name)
@@ -60,22 +65,22 @@ def seed_admin_role():
             if permission:
                 link_exists = db.exec(
                     select(RolePermission).where(
-                        (RolePermission.role_id == admin_role.id) &
+                        (RolePermission.role_id == superuser_role.id) &
                         (RolePermission.permission_id == permission.id)
                     )
                 ).first()
 
                 if not link_exists:
-                    db.add(RolePermission(role_id=admin_role.id, permission_id=permission.id))
+                    db.add(RolePermission(role_id=superuser_role.id, permission_id=permission.id))
 
         db.commit()
 
-# insert default admin user (if not exists)
-def seed_default_admin_user():
-    default_username = os.getenv("DEFAULT_USER", "admin")
-    default_password = os.getenv("DEFAULT_PASSWORD", "admin1234")
+# insert default superuser (if not exists)
+def seed_default_superuser():
+    default_username = os.getenv("DEFAULT_USER", "superuser")
+    default_password = os.getenv("DEFAULT_PASSWORD", "superuser1234")
     default_email = os.getenv("ADMIN_EMAIL", "admin@example.com")
-    print(f"\u001b[32mSeeding default admin user: {default_username} / {default_password}\u001b[0m")
+    print(f"\u001b[32mSeeding default superuser: {default_username} / {default_password}\u001b[0m")
     with Session(engine) as db:
         existing_user = db.exec(
             select(User).where(User.username == default_username)
@@ -83,7 +88,7 @@ def seed_default_admin_user():
 
         if not existing_user:
             admin_role = db.exec(
-                select(Role).where(Role.name == "admin")
+                select(Role).where(Role.name == "superuser")
             ).first()
 
             hashed_password = hash_password(default_password)

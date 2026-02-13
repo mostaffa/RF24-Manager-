@@ -15,3 +15,16 @@ def require_permission(permission: str):
         return True
     return checker
 
+
+def require_superuser():
+    def checker(user: User = Depends(get_current_user)):
+        role = user.role
+        print(f"\u001b[32mUser {user.username} has role {role.name if role else 'None'}\u001b[0m")
+        if not role or role.id != 1:
+            raise HTTPException(
+                status_code=403,
+                detail="Superuser role required",
+            )
+        return True
+    return checker
+

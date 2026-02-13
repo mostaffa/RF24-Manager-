@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 import os
 from dotenv import load_dotenv
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import jwt, JWTError
 from passlib.context import CryptContext
@@ -21,14 +21,14 @@ load_dotenv(dotenv_path=env_path)
 
 SECRET_KEY = os.getenv("SECRET_KEY", "CHANGE_ME_SUPER_SECRET_KEY")
 ALGORITHM = os.getenv("ALGORITHM", "HS256")
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 60))
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 100000000))
 
 # -------------------------------------------------------------------
 # Security utils
 # -------------------------------------------------------------------
 
 pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login", auto_error=False)
 
 # -------------------------------------------------------------------
 # Password helpers
@@ -67,7 +67,8 @@ def create_access_token(
 # -------------------------------------------------------------------
 
 def get_current_user(
-    token: str = Depends(oauth2_scheme),
+    request: Request,
+    token: str | None = Depends(oauth2_scheme),
     db: Session = Depends(get_session),
 ) -> User:
     credentials_exception = HTTPException(
@@ -75,7 +76,26 @@ def get_current_user(
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+    if not token:
+        cookie_token = request.cookies.get("access_token")
+        if cookie_token:
+            token = extract_bearer_from_cookie_value(cookie_token)
 
+    print(f"\u001b[34mReceived token: {token}\u001b[0m")
+    if not token:
+        raise credentials_exception
+
+    return _get_user_from_token(token, db, credentials_exception)
+
+def get_current_user_from_token(token: str, db: Session) -> User:
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    return _get_user_from_token(token, db, credentials_exception)
+
+def _get_user_from_token(token: str, db: Session, credentials_exception: HTTPException) -> User:
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id: str | None = payload.get("sub")
@@ -92,3 +112,14 @@ def get_current_user(
         raise credentials_exception
 
     return user
+
+def extract_bearer_from_cookie_value(raw: str) -> str:
+    """Normalize cookie value to a bare JWT string. Accepts optional surrounding quotes and 'Bearer ' prefix."""
+    if raw is None:
+        raise JWTError("Missing token")
+    v = raw.strip().strip('"').strip("'")
+    if v.lower().startswith("bearer "):
+        v = v.split(" ", 1)[1]
+    if not v:
+        raise JWTError("Empty token")
+    return v
