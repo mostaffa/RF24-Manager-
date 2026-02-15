@@ -29,10 +29,21 @@ def load_env() -> None:
 
 
 def reset_database() -> None:
+    """Drop all tables and Alembic version table to start fresh."""
+    from sqlalchemy import text
+    
     ensure_models_imported()
     engine = get_engine()
+    
+    # Drop all application tables
     SQLModel.metadata.drop_all(engine)
-    SQLModel.metadata.create_all(engine)
+    
+    # Also drop the alembic_version table so migrations run fresh
+    with engine.connect() as conn:
+        conn.execute(text("DROP TABLE IF EXISTS alembic_version"))
+        conn.commit()
+    
+    print("Database reset complete.")
 
 
 def seed_database() -> None:
@@ -104,11 +115,32 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def run_alembic_migrations() -> None:
+    """Run Alembic migrations to create the schema."""
+    import subprocess
+    
+    print("Running Alembic migrations...")
+    result = subprocess.run(
+        ["python", "-m", "alembic", "upgrade", "head"],
+        cwd=BACKEND_ROOT,
+        capture_output=False,  # Show output in real-time
+        text=True,
+    )
+    
+    if result.returncode != 0:
+        print("Failed to run Alembic migrations!")
+        sys.exit(1)
+    
+    print("Alembic migrations applied successfully.")
+
+
 def main() -> None:
     args = parse_args()
     load_env()
 
     reset_database()
+    run_alembic_migrations()
+    
     if not args.no_seed:
         seed_database()
         permission_count = verify_permissions_seeded()

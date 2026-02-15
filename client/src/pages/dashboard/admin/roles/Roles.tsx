@@ -10,6 +10,7 @@ import {
 } from "../../../../features/user/rolesApiSlice"
 import useSocket from "../../../../hooks/useSocket/useSocket"
 import { useDialogs } from "../../../../hooks/useDialogs/useDialogs"
+import ButtonGroup from "@mui/material/ButtonGroup"
 import Button from "@mui/material/Button"
 import { useForm, Controller } from "react-hook-form"
 import type { RoleRead } from "../../../../api"
@@ -22,6 +23,7 @@ import useNotifications from "../../../../hooks/useNotifications/useNotification
 import { RolesService } from "../../../../api"
 
 const CreateRole = React.lazy(() => import("./CreateRole"))
+const RolePermission = React.lazy(() => import("./RolePermission"))
 
 type ModifyRoles = {
   status: "update" | "delete" | "create"
@@ -284,6 +286,20 @@ const Roles = () => {
     [dialogs, notifications, refreshRoles, status],
   )
 
+  const handleViewPermissions = useCallback(
+    (roleId: number) => {
+      const permissionsDialog = dialogs.contentDialog(
+        <React.Suspense fallback={<Loader />}>
+          <RolePermission roleId={roleId} />
+        </React.Suspense>,
+        {
+          title: "Role Permissions",
+        },
+      )
+    },
+    [dialogs],
+  )
+
   useEffect(() => {
     if (message) {
       if (message.type.startsWith("role_")) {
@@ -367,6 +383,7 @@ const Roles = () => {
           >
             <Paper elevation={3} sx={{ p: 2 }}>
               <Typography variant="h6">{role.name}</Typography>
+              <ButtonGroup variant="outlined" size="small" sx={{ mt: 1 }} >
               <Button
                 variant="contained"
                 size="small"
@@ -378,6 +395,18 @@ const Roles = () => {
               >
                 Update
               </Button>
+              <Button
+                variant="contained"
+                size="small"
+                color="success"
+                sx={{ mt: 1 }}
+                onClick={() => {
+                  handleViewPermissions(role.id)
+                }}
+                >
+                Permissions
+                </Button>
+              </ButtonGroup>
             </Paper>
             <IconButton
               disabled={role.id === 1} // Disable delete button for superuser role

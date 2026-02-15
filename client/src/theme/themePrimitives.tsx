@@ -250,7 +250,7 @@ export const colorSchemes = {
     palette: {
       primary: {
         light: brand[200],
-        main: orange[400],
+        main: brand[600],
         dark: brand[700],
         contrastText: brand[50],
       },
@@ -263,7 +263,7 @@ export const colorSchemes = {
       warning: {
         light: orange[300],
         main: orange[400],
-        dark: orange[800],
+        dark: orange[900],
       },
       error: {
         light: red[300],
@@ -312,7 +312,7 @@ export const colorSchemes = {
       },
       warning: {
         light: orange[400],
-        main: orange[500],
+        main: orange[300],
         dark: orange[700],
       },
       error: {

@@ -1,5 +1,5 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react"
-import type { RoleRead } from "../../api"
+import type { RoleRead, PermissionRead } from "../../api"
 import { RolesService } from "../../api/services/RolesService"
 
 export const rolesApiSlice = createApi({
@@ -11,6 +11,24 @@ export const rolesApiSlice = createApi({
       async queryFn() {
         try {
           const data = await RolesService.readRolesApiV1RolesGet()
+          return { data }
+        } catch (error) {
+          return {
+            error: {
+              status: "CUSTOM_ERROR" as const,
+              data: error,
+              error: String(error),
+            },
+          }
+        }
+      },
+    }),
+    getRolePermissions: builder.query<PermissionRead[], number>({
+      async queryFn(roleId: number) {
+        try {
+          const data = await RolesService.readRolePermissionsApiV1RolesRoleIdPermissionsGet(
+            {roleId},
+          )
           return { data }
         } catch (error) {
           return {
@@ -54,4 +72,5 @@ export const {
   useAddRoleMutation,
   useUpdateRoleMutation,
   useDeleteRoleMutation,
+  useGetRolePermissionsQuery,
 } = rolesApiSlice

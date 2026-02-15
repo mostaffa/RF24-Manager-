@@ -14,9 +14,7 @@ const ProfileSettings = React.lazy(
   () => import("../pages/dashboard/Profile/Settings"),
 )
 const Roles = React.lazy(() => import("../pages/dashboard/admin/roles/Roles"))
-const Permissions = React.lazy(
-  () => import("../pages/dashboard/admin/permissions/Permissions"),
-)
+
 
 export default function DashboardRouter() {
   return (
@@ -66,14 +64,6 @@ export default function DashboardRouter() {
         element={
           <React.Suspense fallback={<Loader />}>
             <Roles />
-          </React.Suspense>
-        }
-      />
-      <Route
-        path="/admin/permissions"
-        element={
-          <React.Suspense fallback={<Loader />}>
-            <Permissions />
           </React.Suspense>
         }
       />
