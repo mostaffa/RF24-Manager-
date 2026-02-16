@@ -287,8 +287,8 @@ const Roles = () => {
   )
 
   const handleViewPermissions = useCallback(
-    (roleId: number) => {
-      const permissionsDialog = dialogs.contentDialog(
+    async (roleId: number) => {
+      await dialogs.contentDialog(
         <React.Suspense fallback={<Loader />}>
           <RolePermission roleId={roleId} />
         </React.Suspense>,
@@ -383,28 +383,30 @@ const Roles = () => {
           >
             <Paper elevation={3} sx={{ p: 2 }}>
               <Typography variant="h6">{role.name}</Typography>
-              <ButtonGroup variant="outlined" size="small" sx={{ mt: 1 }} >
-              <Button
-                variant="contained"
-                size="small"
-                color="warning"
-                sx={{ mt: 1 }}
-                onClick={() => {
-                  handleEditRole(role)
-                }}
-              >
-                Update
-              </Button>
-              <Button
-                variant="contained"
-                size="small"
-                color="success"
-                sx={{ mt: 1 }}
-                onClick={() => {
-                  handleViewPermissions(role.id)
-                }}
+              <ButtonGroup variant="outlined" size="small" sx={{ mt: 1 }}>
+                <Button
+                  variant="contained"
+                  size="small"
+                  color="warning"
+                  sx={{ mt: 1 }}
+                  onClick={() => {
+                    handleEditRole(role)
+                  }}
                 >
-                Permissions
+                  Update
+                </Button>
+                <Button
+                  variant="contained"
+                  size="small"
+                  color="success"
+                  sx={{ mt: 1 }}
+                  onClick={() => {
+                    void (async () => {
+                      await handleViewPermissions(role.id)
+                    })()
+                  }}
+                >
+                  Permissions
                 </Button>
               </ButtonGroup>
             </Paper>

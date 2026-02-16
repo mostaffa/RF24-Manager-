@@ -10,7 +10,8 @@ export const permissionApiSlice = createApi({
     getPermissions: builder.query<PermissionRead[], undefined>({
       async queryFn() {
         try {
-          const data = await PermissionsService.readPermissionsApiV1PermissionsGet()
+          const data =
+            await PermissionsService.readPermissionsApiV1PermissionsGet()
           return { data }
         } catch (error) {
           return {

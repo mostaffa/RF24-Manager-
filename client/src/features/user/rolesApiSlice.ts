@@ -26,9 +26,10 @@ export const rolesApiSlice = createApi({
     getRolePermissions: builder.query<PermissionRead[], number>({
       async queryFn(roleId: number) {
         try {
-          const data = await RolesService.readRolePermissionsApiV1RolesRoleIdPermissionsGet(
-            {roleId},
-          )
+          const data =
+            await RolesService.readRolePermissionsApiV1RolesRoleIdPermissionsGet(
+              { roleId },
+            )
           return { data }
         } catch (error) {
           return {

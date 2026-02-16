@@ -23,7 +23,11 @@ import {
   getDrawerWidthTransitionMixin,
 } from "../mixins"
 import { useAppSelector, useAppDispatch } from "../../../app/hooks.ts"
-import { selectUser, clearUser } from "../../../features/user/userSlice.ts"
+import {
+  selectUser,
+  clearUser,
+  selectPermissions,
+} from "../../../features/user/userSlice.ts"
 import ExitToAppIcon from "@mui/icons-material/ExitToApp"
 import { AuthService } from "../../../api/index.ts"
 
@@ -41,6 +45,7 @@ export default function DashboardSidebar({
   container,
 }: DashboardSidebarProps) {
   const user = useAppSelector(selectUser)
+  const permissions = useAppSelector(selectPermissions)
   const dispatch = useAppDispatch()
   const theme = useTheme()
 
@@ -169,10 +174,11 @@ export default function DashboardSidebar({
               selected={!!matchPath("/layout/*", pathname)}
             />
 
-            {user?.role?.name === "superuser" && (
+            {(permissions.includes("role:read") || user?.role?.id === 1) && (
               <>
                 <DashboardSidebarDividerItem />
                 <DashboardSidebarHeaderItem>Admin</DashboardSidebarHeaderItem>
+
                 <DashboardSidebarPageItem
                   id="roles"
                   title="Roles & Permissions"
@@ -203,13 +209,12 @@ export default function DashboardSidebar({
                         title="Permissions"
                         icon={<ReportGmailerrorredIcon />}
                         href="/admin/permissions"
-                        selected={
-                          !!matchPath("/admin/permissions/*", pathname)
-                        }
+                        selected={!!matchPath("/admin/permissions/*", pathname)}
                       />
                     </List>
                   }
                 />
+
                 <DashboardSidebarPageItem
                   id="integrations"
                   title="Integrations"
@@ -254,6 +259,7 @@ export default function DashboardSidebar({
       pathname,
       dispatch,
       user,
+      permissions,
     ],
   )
 

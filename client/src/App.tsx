@@ -40,23 +40,23 @@ export const App = () => {
       <AppTheme>
         <CssBaseline enableColorScheme />
         <React.Suspense fallback={<Loader />}>
-          <NotificationsProvider>
+          <SocketProvider>
             <React.Suspense fallback={<Loader />}>
-              <DialogsProvider>
-                {user ? (
-                  <React.Suspense fallback={<Loader />}>
-                    <SocketProvider>
+              <NotificationsProvider>
+                <React.Suspense fallback={<Loader />}>
+                  <DialogsProvider>
+                    {user ? (
                       <AppRouter />
-                    </SocketProvider>
-                  </React.Suspense>
-                ) : (
-                  <React.Suspense fallback={<Loader />}>
-                    <Signin />
-                  </React.Suspense>
-                )}
-              </DialogsProvider>
+                    ) : (
+                      <React.Suspense fallback={<Loader />}>
+                        <Signin />
+                      </React.Suspense>
+                    )}
+                  </DialogsProvider>
+                </React.Suspense>
+              </NotificationsProvider>
             </React.Suspense>
-          </NotificationsProvider>
+          </SocketProvider>
         </React.Suspense>
       </AppTheme>
     </React.Suspense>

@@ -10,6 +10,7 @@ from sqlmodel import Session, select
 
 from app.db.session import get_session
 from app.models.user import User
+from app.models.permission import Permission, RolePermission
 
 # load environment variables from .env file
 env_path = os.path.join(os.path.dirname(__file__), "../../.env")
@@ -123,3 +124,15 @@ def extract_bearer_from_cookie_value(raw: str) -> str:
     if not v:
         raise JWTError("Empty token")
     return v
+
+def get_current_user_permissions(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_session)
+) -> list[Permission]:
+    if not current_user.role:
+        return []
+    # return a list of permissions from RolePermission objects related to the user's role
+    permissions = db.exec(
+        select(Permission).join(RolePermission).where(RolePermission.role_id == current_user.role_id)
+    ).all()
+    return permissions

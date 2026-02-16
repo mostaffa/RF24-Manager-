@@ -20,13 +20,30 @@ export const userSlice = createAppSlice({
     clearUser: state => {
       state.user = null
     },
+    addPermission: (state, action: PayloadAction<string>) => {
+      if (state.user) {
+        state.user.permissions ??= []
+        if (!state.user.permissions.includes(action.payload)) {
+          state.user.permissions.push(action.payload)
+        }
+      }
+    },
+    removePermission: (state, action: PayloadAction<string>) => {
+      if (state.user?.permissions) {
+        state.user.permissions = state.user.permissions.filter(
+          perm => perm !== action.payload,
+        )
+      }
+    },
   },
   selectors: {
     selectUser: state => state.user?.user,
+    selectPermissions: state => state.user?.permissions ?? [],
   },
 })
 
-export const { setUser, clearUser } = userSlice.actions
-export const { selectUser } = userSlice.selectors
+export const { setUser, clearUser, addPermission, removePermission } =
+  userSlice.actions
+export const { selectUser, selectPermissions } = userSlice.selectors
 
 export default userSlice.reducer

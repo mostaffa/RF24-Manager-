@@ -15,5 +15,6 @@ class UserLogin(BaseModel):
 
 class UserOut(BaseModel):
     user: UserRead
+    permissions: list[str] = []
     class Config:
         from_attributes = True

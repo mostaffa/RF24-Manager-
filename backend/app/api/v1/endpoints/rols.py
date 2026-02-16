@@ -146,12 +146,16 @@ async def assign_permission_to_role(
 
     db.add(RolePermission(role_id=role_id, permission_id=permission_id))
     db.commit()
+    
+    # Refresh to get updated relationships
+    db.refresh(role)
+    db.refresh(permission)
 
     await sio.emit(
         "msg",
         {
             "type": "role_permission_added",
-            "payload": {"role_id": role_id, "permission_id": permission_id},
+            "payload": {"role": role.dict(), "permission": permission.dict()},
         },
         room=build_role_rooms(role_id),
     )
@@ -179,12 +183,13 @@ async def remove_permission_from_role(
 
     db.delete(link)
     db.commit()
-
+    role = db.get(Role, role_id)
+    permission = db.get(Permission, permission_id)
     await sio.emit(
         "msg",
         {
             "type": "role_permission_removed",
-            "payload": {"role_id": role_id, "permission_id": permission_id},
+            "payload": {"role": role.dict(), "permission": permission.dict()},
         },
         room=build_role_rooms(role_id),
     )

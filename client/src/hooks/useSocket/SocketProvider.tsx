@@ -1,11 +1,15 @@
 import React, { useState, useEffect, useRef } from "react"
 import { io } from "socket.io-client"
-import { useAppSelector } from "../../app/hooks"
-import { selectUser } from "../../features/user/userSlice"
+import { useAppSelector, useAppDispatch } from "../../app/hooks"
+import {
+  selectUser,
+  addPermission,
+  removePermission,
+} from "../../features/user/userSlice"
 import SocketContext from "./SocketContext"
 import type { ReactNode } from "react"
 import type { Socket } from "socket.io-client"
-import type { UserRead, RoleRead } from "../../api"
+import type { UserRead, RoleRead, PermissionRead } from "../../api"
 
 type SocketProviderProps = {
   children: ReactNode
@@ -21,17 +25,22 @@ export type SocketMessage = {
     | "role_created"
     | "role_updated"
     | "role_deleted"
+    | "role_permission_added"
+    | "role_permission_removed"
   payload:
     | UserRead
     | RoleRead
+    | PermissionRead
     | string
     | number
     | { role_id: number }
     | { user_id: number }
+    | { role: RoleRead; permission: PermissionRead }
     | { message: string }
 }
 
 export const SocketProvider = ({ children }: SocketProviderProps) => {
+  const dispatch = useAppDispatch()
   const WS_PATH = (import.meta.env.VITE_WS_PATH as string | undefined) ?? "/ws"
   //   const WS_URL = import.meta.env.VITE_WS_URL || window.location.origin;
   const user = useAppSelector(selectUser)
@@ -51,7 +60,9 @@ export const SocketProvider = ({ children }: SocketProviderProps) => {
       // console.log("No user found, skipping socket connection.")
       // if (socketRef.current) {
       // console.log("Disconnecting socket due to no user.")
-      socketRef.current.disconnect()
+      if (socketRef.current.connected) {
+        socketRef.current.disconnect()
+      }
       socketRef.current = null
       // }
       return
@@ -87,6 +98,40 @@ export const SocketProvider = ({ children }: SocketProviderProps) => {
       // console.log(`\u001b[31mSocket disconnected on cleanup\u001b[0m`);
     }
   }, [user, WS_PATH])
+
+  useEffect(() => {
+    if (user && socketRef.current) {
+      if (message) {
+        if (typeof message.payload === "object") {
+          if (
+            message.type === "role_permission_added" &&
+            "role" in message.payload &&
+            "permission" in message.payload
+          ) {
+            if (user.role?.id === message.payload.role.id) {
+              const payload = message.payload as {
+                role: RoleRead
+                permission: PermissionRead
+              }
+              dispatch(addPermission(payload.permission.name))
+            }
+          } else if (
+            message.type === "role_permission_removed" &&
+            "role" in message.payload &&
+            "permission" in message.payload
+          ) {
+            if (user.role?.id === message.payload.role.id) {
+              const payload = message.payload as {
+                role: RoleRead
+                permission: PermissionRead
+              }
+              dispatch(removePermission(payload.permission.name))
+            }
+          }
+        }
+      }
+    }
+  }, [user, message, dispatch])
 
   const contextValue = React.useMemo(
     () => ({

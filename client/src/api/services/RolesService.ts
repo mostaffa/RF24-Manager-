@@ -1,6 +1,5 @@
 /* generated using openapi-typescript-codegen -- do not edit */
 /* istanbul ignore file */
-/* tslint:disable */
 /* eslint-disable */
 import type { PermissionRead } from "../models/PermissionRead"
 import type { RoleCreate } from "../models/RoleCreate"

@@ -15,7 +15,6 @@ const ProfileSettings = React.lazy(
 )
 const Roles = React.lazy(() => import("../pages/dashboard/admin/roles/Roles"))
 
-
 export default function DashboardRouter() {
   return (
     <Routes>
