@@ -12,14 +12,28 @@ router = APIRouter()
 
 # 
 
-def build_role_rooms(role_id: int) -> list[str]:
-    return [f"role_{role_id}", "role_1"]
+# def build_role_rooms(role_id: int) -> list[str]:
+#     return [f"role_{role_id}", "role_1"]
+
+# Helper function to return an array of roomes for all users with "role:read" permission (including superusers)
+def build_role_rooms(db: Session) -> list[str]:
+    # Get all roles with "role:read" permission from RolePermission
+    # First, find the permission with name "role:read"
+    permission = db.exec(select(Permission).where(Permission.name == "role:read")).first()
+    if not permission:
+        return []
+    
+    # Get all role_ids with this permission
+    role_permissions = db.exec(select(RolePermission).where(RolePermission.permission_id == permission.id)).all()
+    role_ids = [rp.role_id for rp in role_permissions]
+    
+    return [f"role_{role_id}" for role_id in role_ids] 
 
 
 @router.post(
     "/",
     response_model=RoleRead,
-    dependencies=[Depends(require_superuser())],
+    dependencies=[Depends(require_permission_or_superuser("role:create"))],
 )
 async def create_role(role_in: RoleCreate, db: Session = Depends(get_session)):
     # 1. Check if role exists
@@ -36,14 +50,14 @@ async def create_role(role_in: RoleCreate, db: Session = Depends(get_session)):
     await sio.emit(
         "msg",
         {"type": "role_created", "payload": db_role.dict()},
-        room=build_role_rooms(db_role.id),
+        room=build_role_rooms(db),
     )
     return db_role
 
 @router.get(
     "/{role_id}",
     response_model=RoleRead,
-    dependencies=[Depends(require_superuser())],
+    dependencies=[Depends(require_permission_or_superuser("role:read"))],
 )
 def read_role(role_id: int, db: Session = Depends(get_session)):
     role = db.get(Role, role_id)
@@ -63,7 +77,7 @@ def read_roles(db: Session = Depends(get_session)):
 @router.put(
     "/{role_id}",
     response_model=RoleRead,
-    dependencies=[Depends(require_superuser())],
+    dependencies=[Depends(require_permission_or_superuser("role:update"))],
 )
 async def update_role(role_id: int, role_in: RoleCreate, db: Session = Depends(get_session)):
     role = db.get(Role, role_id)
@@ -81,14 +95,14 @@ async def update_role(role_id: int, role_in: RoleCreate, db: Session = Depends(g
     await sio.emit(
         "msg",
         {"type": "role_updated", "payload": role.dict()},
-        room=build_role_rooms(role_id),
+        room=build_role_rooms(db),
     )
     return role
 
 @router.delete(
     "/{role_id}",
     response_model=dict,
-    dependencies=[Depends(require_superuser())],
+    dependencies=[Depends(require_permission_or_superuser("role:delete"))],
 )
 async def delete_role(role_id: int, db: Session = Depends(get_session)):
     # if role_id == 1 prevent deletion of superuser role
@@ -102,7 +116,7 @@ async def delete_role(role_id: int, db: Session = Depends(get_session)):
     await sio.emit(
         "msg",
         {"type": "role_deleted", "payload": {"role_id": role_id}},
-        room=build_role_rooms(role_id),
+        room=build_role_rooms(db),
     )
     return {"detail": "Role deleted"}
 
@@ -110,7 +124,7 @@ async def delete_role(role_id: int, db: Session = Depends(get_session)):
 @router.get(
     "/{role_id}/permissions",
     response_model=list[PermissionRead],
-    dependencies=[Depends(require_superuser())],
+    dependencies=[Depends(require_permission_or_superuser("role:read"))],
 )
 def read_role_permissions(role_id: int, db: Session = Depends(get_session)):
     role = db.get(Role, role_id)
@@ -122,7 +136,7 @@ def read_role_permissions(role_id: int, db: Session = Depends(get_session)):
 @router.post(
     "/{role_id}/permissions/{permission_id}",
     response_model=dict,
-    dependencies=[Depends(require_superuser())],
+    dependencies=[Depends(require_permission_or_superuser("role:update"))],
 )
 async def assign_permission_to_role(
     role_id: int,
@@ -158,7 +172,7 @@ async def assign_permission_to_role(
             "type": "role_permission_added",
             "payload": {"role": role.dict(), "permission": permission.dict()},
         },
-        room=build_role_rooms(role_id),
+        room=build_role_rooms(db),
     )
     return {"detail": "Permission assigned"}
 
@@ -166,7 +180,7 @@ async def assign_permission_to_role(
 @router.delete(
     "/{role_id}/permissions/{permission_id}",
     response_model=dict,
-    dependencies=[Depends(require_superuser())],
+    dependencies=[Depends(require_permission_or_superuser("role:update"))],
 )
 async def remove_permission_from_role(
     role_id: int,
@@ -192,6 +206,6 @@ async def remove_permission_from_role(
             "type": "role_permission_removed",
             "payload": {"role": role.dict(), "permission": permission.dict()},
         },
-        room=build_role_rooms(role_id),
+        room=build_role_rooms(db),
     )
     return {"detail": "Permission removed"}

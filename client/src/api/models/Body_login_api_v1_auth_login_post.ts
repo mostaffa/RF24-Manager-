@@ -1,6 +1,6 @@
 /* generated using openapi-typescript-codegen -- do not edit */
 /* istanbul ignore file */
- 
+
 export type Body_login_api_v1_auth_login_post = {
   grant_type?: string | null
   username: string

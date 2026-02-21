@@ -1,6 +1,6 @@
 /* generated using openapi-typescript-codegen -- do not edit */
 /* istanbul ignore file */
- 
+
 import type { ApiRequestOptions } from "./ApiRequestOptions"
 
 type Resolver<T> = (options: ApiRequestOptions) => Promise<T>

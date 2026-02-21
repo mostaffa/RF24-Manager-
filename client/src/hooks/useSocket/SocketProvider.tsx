@@ -147,6 +147,28 @@ export const SocketProvider = ({ children }: SocketProviderProps) => {
               ),
             )
             break
+          case "role_updated":
+            dispatch(
+              rolesApiSlice.util.updateQueryData(
+                "getRoles",
+                undefined,
+                draft => {
+                  if (
+                    typeof message.payload === "object" &&
+                    "id" in message.payload
+                  ) {
+                    const updatedRole = message.payload as RoleRead
+                    const index = draft.findIndex(
+                      role => role.id === updatedRole.id,
+                    )
+                    if (index !== -1) {
+                      draft[index] = updatedRole
+                    }
+                  }
+                },
+              ),
+            )
+            break
           case "role_permission_added": {
             const permissionToAdd = (
               message.payload as { role: RoleRead; permission: PermissionRead }
@@ -263,7 +285,7 @@ export const SocketProvider = ({ children }: SocketProviderProps) => {
             )
             break
           default:
-            console.warn(`Unhandled message type: ${message.type}`)
+            console.warn("Unhandled message type:", message.type)
         }
       }
       // if (typeof message.payload === "object") {

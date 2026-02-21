@@ -1,6 +1,6 @@
 /* generated using openapi-typescript-codegen -- do not edit */
 /* istanbul ignore file */
- 
+
 /**
  * Docstring for UserCreate
  * Schema for creating a new user.

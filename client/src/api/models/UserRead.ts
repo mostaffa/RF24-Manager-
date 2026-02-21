@@ -1,6 +1,6 @@
 /* generated using openapi-typescript-codegen -- do not edit */
 /* istanbul ignore file */
- 
+
 import type { RoleRead } from "./RoleRead"
 /**
  * Docstring for UserRead
