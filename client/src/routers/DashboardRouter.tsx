@@ -1,6 +1,8 @@
 import React from "react"
 import { Routes, Route } from "react-router"
 import Loader from "../components/ui/loader/Loader"
+import { useAppSelector } from "../app/hooks"
+import { selectUser, selectPermissions } from "../features/user/userSlice"
 
 const Layout = React.lazy(() => import("../pages/dashboard/layout/Layout"))
 const MainView = React.lazy(() => import("../pages/dashboard/main/MainView"))
@@ -10,19 +12,23 @@ const Dialogs = React.lazy(
 const NotificationAlerts = React.lazy(
   () => import("../pages/dashboard/notifications/NotificationAlerts"),
 )
-const ProfileSettings = React.lazy(
-  () => import("../pages/dashboard/Profile/Settings"),
-)
+
 const Roles = React.lazy(() => import("../pages/dashboard/admin/roles/Roles"))
+const Users = React.lazy(() => import("../pages/dashboard/admin/users/Users"))
+const UserForm = React.lazy(
+  () => import("../pages/dashboard/admin/users/UserForm"),
+)
 
 export default function DashboardRouter() {
+  const user = useAppSelector(selectUser)
+  const permissions = useAppSelector(selectPermissions)
   return (
     <Routes>
       <Route
         path="/me"
         element={
           <React.Suspense fallback={<Loader />}>
-            <ProfileSettings />
+            <UserForm updateCurrentUser />
           </React.Suspense>
         }
       />
@@ -58,14 +64,26 @@ export default function DashboardRouter() {
           </React.Suspense>
         }
       />
-      <Route
-        path="/admin/roles"
-        element={
-          <React.Suspense fallback={<Loader />}>
-            <Roles />
-          </React.Suspense>
-        }
-      />
+      {permissions?.includes("role:read") || user?.role?.id === 1 ? (
+        <Route
+          path="/admin/roles"
+          element={
+            <React.Suspense fallback={<Loader />}>
+              <Roles />
+            </React.Suspense>
+          }
+        />
+      ) : null}
+      {permissions?.includes("user:read") || user?.role?.id === 1 ? (
+        <Route
+          path="/admin/users"
+          element={
+            <React.Suspense fallback={<Loader />}>
+              <Users />
+            </React.Suspense>
+          }
+        />
+      ) : null}
     </Routes>
   )
 }

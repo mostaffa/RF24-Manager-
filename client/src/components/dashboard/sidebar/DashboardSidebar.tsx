@@ -173,8 +173,21 @@ export default function DashboardSidebar({
               href="/layout"
               selected={!!matchPath("/layout/*", pathname)}
             />
+            {permissions?.includes("user:read") && (
+              <>
+                <DashboardSidebarDividerItem />
+                <DashboardSidebarHeaderItem>Users</DashboardSidebarHeaderItem>
 
-            {(permissions.includes("role:read") || user?.role?.id === 1) && (
+                <DashboardSidebarPageItem
+                  id="users"
+                  title="Users"
+                  icon={<PeopleOutlineIcon />}
+                  href="/admin/users"
+                  selected={!!matchPath("/admin/users/*", pathname)}
+                />
+              </>
+            )}
+            {permissions?.includes("role:read") && (
               <>
                 <DashboardSidebarDividerItem />
                 <DashboardSidebarHeaderItem>Admin</DashboardSidebarHeaderItem>

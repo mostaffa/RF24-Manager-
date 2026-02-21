@@ -5,11 +5,12 @@ from app.models.user import Role, Permission
 from app.models.permission import RolePermission
 from app.schemas.role import RoleCreate, RoleRead
 from app.schemas.permission import PermissionRead
-from app.core.rbac import require_superuser
+from app.core.rbac import require_superuser, require_permission, require_permission_or_superuser
 from app.websockets.connection_manager import sio
 
 router = APIRouter()
 
+# 
 
 def build_role_rooms(role_id: int) -> list[str]:
     return [f"role_{role_id}", "role_1"]
@@ -53,7 +54,7 @@ def read_role(role_id: int, db: Session = Depends(get_session)):
 @router.get(
     "/",
     response_model=list[RoleRead],
-    dependencies=[Depends(require_superuser())],
+    dependencies=[Depends(require_permission_or_superuser("role:read"))],
 )
 def read_roles(db: Session = Depends(get_session)):
     roles = db.exec(select(Role)).all()

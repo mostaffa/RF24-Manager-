@@ -1,13 +1,14 @@
-import React, { useCallback, useEffect } from "react"
+import React, { useCallback } from "react"
 import Container from "@mui/material/Container"
 import Grid from "@mui/material/Grid"
 import Paper from "@mui/material/Paper"
 import Typography from "@mui/material/Typography"
-import { useAppDispatch } from "../../../../app/hooks"
+import { useAppDispatch, useAppSelector } from "../../../../app/hooks"
 import {
   useGetRolesQuery,
   rolesApiSlice,
 } from "../../../../features/user/rolesApiSlice"
+import { selectPermissions } from "../../../../features/user/userSlice"
 import useSocket from "../../../../hooks/useSocket/useSocket"
 import { useDialogs } from "../../../../hooks/useDialogs/useDialogs"
 import ButtonGroup from "@mui/material/ButtonGroup"
@@ -31,9 +32,10 @@ type ModifyRoles = {
 }
 
 const Roles = () => {
+  const permissions = useAppSelector(selectPermissions)
   // const user = useAppSelector(selectUser);
   const { data: roles = [] } = useGetRolesQuery(undefined)
-  const { message, setMessage, status } = useSocket()
+  const { status } = useSocket()
   const dialogs = useDialogs()
   const dispatch = useAppDispatch()
   const notifications = useNotifications()
@@ -300,44 +302,44 @@ const Roles = () => {
     [dialogs],
   )
 
-  useEffect(() => {
-    if (message) {
-      if (message.type.startsWith("role_")) {
-        dispatch(
-          rolesApiSlice.util.updateQueryData("getRoles", undefined, draft => {
-            switch (message.type) {
-              case "role_created": {
-                draft.push(message.payload as RoleRead)
-                break
-              }
-              case "role_updated": {
-                const updatedRole = message.payload as RoleRead
-                const index = draft.findIndex(
-                  role => role.id === updatedRole.id,
-                )
-                if (index !== -1) {
-                  draft[index].name = updatedRole.name
-                }
-                break
-              }
-              case "role_deleted": {
-                const deletedRoleId = (message.payload as { role_id: number })
-                  .role_id
-                const deleteIndex = draft.findIndex(
-                  role => role.id === deletedRoleId,
-                )
-                if (deleteIndex !== -1) {
-                  draft.splice(deleteIndex, 1)
-                }
-                break
-              }
-            }
-          }),
-        )
-      }
-      setMessage(null)
-    }
-  }, [message, setMessage, dispatch])
+  // useEffect(() => {
+  //   if (message) {
+  //     if (message.type.startsWith("role_")) {
+  //       dispatch(
+  //         rolesApiSlice.util.updateQueryData("getRoles", undefined, draft => {
+  //           switch (message.type) {
+  //             case "role_created": {
+  //               draft.push(message.payload as RoleRead)
+  //               break
+  //             }
+  //             case "role_updated": {
+  //               const updatedRole = message.payload as RoleRead
+  //               const index = draft.findIndex(
+  //                 role => role.id === updatedRole.id,
+  //               )
+  //               if (index !== -1) {
+  //                 draft[index].name = updatedRole.name
+  //               }
+  //               break
+  //             }
+  //             case "role_deleted": {
+  //               const deletedRoleId = (message.payload as { role_id: number })
+  //                 .role_id
+  //               const deleteIndex = draft.findIndex(
+  //                 role => role.id === deletedRoleId,
+  //               )
+  //               if (deleteIndex !== -1) {
+  //                 draft.splice(deleteIndex, 1)
+  //               }
+  //               break
+  //             }
+  //           }
+  //         }),
+  //       )
+  //     }
+  //     setMessage(null)
+  //   }
+  // }, [message, setMessage, dispatch])
 
   return (
     <Container maxWidth="xl">
@@ -356,23 +358,25 @@ const Roles = () => {
             permissions associated with each role and manage them as needed.
           </Typography>
         </Grid>
-        <Grid
-          size={{ xs: 12, sm: 12, md: 4, lg: 4, xl: 4 }}
-          component={Paper}
-          elevation={3}
-          sx={{ p: 2 }}
-        >
-          <Typography variant="h5" gutterBottom>
-            Create a new role
-          </Typography>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={handleCreateNewRole}
+        {permissions?.includes("role:create") && (
+          <Grid
+            size={{ xs: 12, sm: 12, md: 4, lg: 4, xl: 4 }}
+            component={Paper}
+            elevation={3}
+            sx={{ p: 2 }}
           >
-            New Role
-          </Button>
-        </Grid>
+            <Typography variant="h5" gutterBottom>
+              Create a new role
+            </Typography>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleCreateNewRole}
+            >
+              New Role
+            </Button>
+          </Grid>
+        )}
       </Grid>
       <Grid container spacing={2} sx={{ mt: 2 }}>
         {roles.map(role => (
@@ -384,47 +388,52 @@ const Roles = () => {
             <Paper elevation={3} sx={{ p: 2 }}>
               <Typography variant="h6">{role.name}</Typography>
               <ButtonGroup variant="outlined" size="small" sx={{ mt: 1 }}>
-                <Button
-                  variant="contained"
-                  size="small"
-                  color="warning"
-                  sx={{ mt: 1 }}
-                  onClick={() => {
-                    handleEditRole(role)
-                  }}
-                >
-                  Update
-                </Button>
-                <Button
-                  variant="contained"
-                  size="small"
-                  color="success"
-                  sx={{ mt: 1 }}
-                  onClick={() => {
-                    void (async () => {
-                      await handleViewPermissions(role.id)
-                    })()
-                  }}
-                >
-                  Permissions
-                </Button>
+                {permissions?.includes("role:update") && (
+                  <Button
+                    variant="contained"
+                    size="small"
+                    color="warning"
+                    sx={{ mt: 1 }}
+                    onClick={() => {
+                      handleEditRole(role)
+                    }}
+                  >
+                    Update
+                  </Button>
+                )}
+                {permissions?.includes("permission:update") && (
+                  <Button
+                    variant="contained"
+                    size="small"
+                    color="success"
+                    sx={{ mt: 1 }}
+                    onClick={() => {
+                      void (async () => {
+                        await handleViewPermissions(role.id)
+                      })()
+                    }}
+                  >
+                    Permissions
+                  </Button>
+                )}
               </ButtonGroup>
             </Paper>
-            <IconButton
-              disabled={role.id === 1} // Disable delete button for superuser role
-              aria-label="delete"
-              color="error"
-              size="small"
-              sx={{ position: "absolute", top: 8, right: 8 }}
-              onClick={() => {
-                void (async () => {
-                  await handleDeleteRole(role.id)
-                })()
-              }}
-            >
-              {" "}
-              <DeleteIcon />
-            </IconButton>
+            {permissions?.includes("role:delete") && (
+              <IconButton
+                disabled={role.id === 1} // Disable delete button for superuser role
+                aria-label="delete"
+                color="error"
+                size="small"
+                sx={{ position: "absolute", top: 8, right: 8 }}
+                onClick={() => {
+                  void (async () => {
+                    await handleDeleteRole(role.id)
+                  })()
+                }}
+              >
+                <DeleteIcon />
+              </IconButton>
+            )}
           </Grid>
         ))}
       </Grid>

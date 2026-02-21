@@ -27,3 +27,8 @@ class User(SQLModel, table=True):
     
     # Relationship object
     role: Optional[Role] = Relationship(back_populates="users")
+
+    def has_permission(self, permission_name: str) -> bool:
+        if not self.role:
+            return False
+        return any(p.name == permission_name for p in self.role.permissions)

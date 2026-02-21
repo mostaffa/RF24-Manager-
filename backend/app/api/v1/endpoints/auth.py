@@ -28,8 +28,12 @@ def login(response: Response,form_data: OAuth2PasswordRequestForm = Depends(), d
     # return Token(access_token=access_token, token_type="bearer")
     # set header with token and return user info
     # response.headers["Authorization"] = f"Bearer {access_token}"
+    permissions = db.exec(
+        select(Permission).join(RolePermission).where(RolePermission.role_id == user.role_id)
+    ).all()
+    user_permissions = [perm.name for perm in permissions]
     response.set_cookie(key="access_token",value=f"Bearer {access_token}", httponly=True)
-    return {"access_token": access_token, "token_type": "bearer", "user": UserOut(user=user)}
+    return {"access_token": access_token, "token_type": "bearer", "user": UserOut(user=user, permissions=user_permissions)}
     
 
 # /api/v1/auth/me endpoint to get current user info
@@ -48,6 +52,6 @@ def read_current_user(current_user: User = Depends(get_current_user), db: Sessio
 @router.post("/logout")
 async def logout(response: Response, current_user: User = Depends(get_current_user)):
     # disconnect user from all websocket rooms
-    await disconnect_user(current_user.id)
+    # await disconnect_user(current_user.id)
     response.delete_cookie(key="access_token")
     return {"message": "Successfully logged out"}

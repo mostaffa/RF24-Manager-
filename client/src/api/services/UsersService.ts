@@ -103,7 +103,7 @@ export class UsersService {
     requestBody,
   }: {
     userId: number
-    requestBody: UserCreate
+    requestBody: UserRead
   }): CancelablePromise<UserRead> {
     return __request(OpenAPI, {
       method: "PUT",

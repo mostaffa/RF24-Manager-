@@ -19,7 +19,7 @@ import useSocket from "../../../../hooks/useSocket/useSocket"
 
 const RolePermission: React.FC<{ roleId: number }> = ({ roleId }) => {
   const dispatch = useAppDispatch()
-  const { message, status } = useSocket()
+  const { status } = useSocket()
   const notifications = useNotifications()
   const { data: rolePermissions, isLoading: isRolePermissionsLoading } =
     useGetRolePermissionsQuery(roleId)
@@ -119,45 +119,45 @@ const RolePermission: React.FC<{ roleId: number }> = ({ roleId }) => {
     [roleId, notifications, updateView, status],
   )
 
-  useEffect(() => {
-    if (
-      message?.type === "role_permission_added" &&
-      typeof message.payload === "object"
-    ) {
-      if (
-        "role" in message.payload &&
-        "permission" in message.payload &&
-        typeof message.payload.role.id === "number" &&
-        typeof message.payload.permission.id === "number"
-      ) {
-        if (roleId === message.payload.role.id) {
-          updateView(
-            message.payload.role.id,
-            message.payload.permission.id,
-            "role_permission_added",
-          )
-        }
-      }
-    } else if (
-      message?.type === "role_permission_removed" &&
-      typeof message.payload === "object"
-    ) {
-      if (
-        "role" in message.payload &&
-        "permission" in message.payload &&
-        typeof message.payload.role.id === "number" &&
-        typeof message.payload.permission.id === "number"
-      ) {
-        if (roleId === message.payload.role.id) {
-          updateView(
-            message.payload.role.id,
-            message.payload.permission.id,
-            "role_permission_removed",
-          )
-        }
-      }
-    }
-  }, [message, updateView, roleId])
+  // useEffect(() => {
+  //   if (
+  //     message?.type === "role_permission_added" &&
+  //     typeof message.payload === "object"
+  //   ) {
+  //     if (
+  //       "role" in message.payload &&
+  //       "permission" in message.payload &&
+  //       typeof message.payload.role.id === "number" &&
+  //       typeof message.payload.permission.id === "number"
+  //     ) {
+  //       if (roleId === message.payload.role.id) {
+  //         updateView(
+  //           message.payload.role.id,
+  //           message.payload.permission.id,
+  //           "role_permission_added",
+  //         )
+  //       }
+  //     }
+  //   } else if (
+  //     message?.type === "role_permission_removed" &&
+  //     typeof message.payload === "object"
+  //   ) {
+  //     if (
+  //       "role" in message.payload &&
+  //       "permission" in message.payload &&
+  //       typeof message.payload.role.id === "number" &&
+  //       typeof message.payload.permission.id === "number"
+  //     ) {
+  //       if (roleId === message.payload.role.id) {
+  //         updateView(
+  //           message.payload.role.id,
+  //           message.payload.permission.id,
+  //           "role_permission_removed",
+  //         )
+  //       }
+  //     }
+  //   }
+  // }, [message, updateView, roleId])
 
   useEffect(() => {
     if (allPermissions) {

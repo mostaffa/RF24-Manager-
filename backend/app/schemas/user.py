@@ -12,6 +12,7 @@ class UserCreate(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     password: str
+    active: bool = True
     role_id: Optional[int] = None
 
 class UserRead(BaseModel):

@@ -4,6 +4,7 @@ import { setupListeners } from "@reduxjs/toolkit/query"
 import { counterSlice } from "../features/counter/counterSlice"
 import { quotesApiSlice } from "../features/quotes/quotesApiSlice"
 import { userSlice } from "../features/user/userSlice"
+import { usersApiSlice } from "../features/user/usersApiSlice"
 import { rolesApiSlice } from "../features/user/rolesApiSlice"
 import { permissionApiSlice } from "../features/user/permissionApiSlice"
 
@@ -13,6 +14,7 @@ const rootReducer = combineSlices(
   counterSlice,
   quotesApiSlice,
   userSlice,
+  usersApiSlice,
   rolesApiSlice,
   permissionApiSlice,
 )
@@ -31,6 +33,7 @@ export const makeStore = (preloadedState?: Partial<RootState>) => {
         quotesApiSlice.middleware,
         rolesApiSlice.middleware,
         permissionApiSlice.middleware,
+        usersApiSlice.middleware,
       )
     },
     preloadedState,

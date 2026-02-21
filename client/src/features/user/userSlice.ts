@@ -38,7 +38,7 @@ export const userSlice = createAppSlice({
   },
   selectors: {
     selectUser: state => state.user?.user,
-    selectPermissions: state => state.user?.permissions ?? [],
+    selectPermissions: state => state.user?.permissions,
   },
 })
 
