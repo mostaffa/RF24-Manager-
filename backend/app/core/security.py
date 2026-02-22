@@ -3,7 +3,7 @@ from typing import Optional
 import os
 from dotenv import load_dotenv
 from fastapi import Depends, HTTPException, Request, status
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
 from passlib.context import CryptContext
 from sqlmodel import Session, select
@@ -56,7 +56,7 @@ def create_access_token(
         else timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     )
 
-    to_encode = {
+    to_encode: dict[str, str | datetime] = {
         "sub": subject,
         "exp": expire,
     }
@@ -114,7 +114,7 @@ def _get_user_from_token(token: str, db: Session, credentials_exception: HTTPExc
 
     return user
 
-def extract_bearer_from_cookie_value(raw: str) -> str:
+def extract_bearer_from_cookie_value(raw: str | None) -> str:
     """Normalize cookie value to a bare JWT string. Accepts optional surrounding quotes and 'Bearer ' prefix."""
     if raw is None:
         raise JWTError("Missing token")
@@ -135,4 +135,4 @@ def get_current_user_permissions(
     permissions = db.exec(
         select(Permission).join(RolePermission).where(RolePermission.role_id == current_user.role_id)
     ).all()
-    return permissions
+    return list(permissions)

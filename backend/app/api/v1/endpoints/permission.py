@@ -4,7 +4,7 @@ from app.db.session import get_session
 from app.models.user import Permission, Role
 from app.models.permission import RolePermission
 from app.schemas.permission import PermissionCreate, PermissionRead
-from app.core.rbac import require_permission, require_superuser
+from app.core.rbac import require_superuser
 from app.core.security import get_current_user
 from app.websockets.connection_manager import emit
 
@@ -58,8 +58,9 @@ async def create_permission(permission_in: PermissionCreate, db: Session = Depen
 
     await emit(
         "msg",
-        {"type": "permission_created", "payload": db_permission.dict()},
-        room=build_role_rooms(superuser_role),
+            {"type": "permission_created", "payload": PermissionRead.model_validate(db_permission).model_dump()},
+            # {"type": "permission_created", "payload": db_permission.dict()},
+            room=build_role_rooms(superuser_role),
     )
     return db_permission
 
@@ -104,7 +105,7 @@ async def update_permission(permission_id: int, permission_in: PermissionCreate,
     superuser_role = get_superuser_role(db)
     await emit(
         "msg",
-        {"type": "permission_updated", "payload": permission.dict()},
+        {"type": "permission_updated", "payload": PermissionRead.model_validate(permission).model_dump()},
         room=build_role_rooms(superuser_role),
     )
     return permission

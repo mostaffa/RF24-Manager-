@@ -2,6 +2,7 @@ from collections import defaultdict
 from collections.abc import Awaitable, Callable
 from typing import Any, DefaultDict, cast
 import socketio  # pyright: ignore[reportMissingTypeStubs]
+from fastapi import WebSocket
 from http.cookies import SimpleCookie
 from app.db.session import get_session
 from app.core.security import get_current_user_from_token, extract_bearer_from_cookie_value
@@ -111,3 +112,16 @@ async def disconnect_user(user_id: int) -> None:
     sids = list(_user_sids.get(user_id, []))
     for sid in sids:
         await socket_disconnect(sid)
+
+
+class ConnectionManager:
+    """Simple manager for FastAPI WebSocket connections."""
+    
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+    
+    async def disconnect(self, websocket: WebSocket):
+        pass
+
+
+manager = ConnectionManager()

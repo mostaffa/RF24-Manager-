@@ -10,10 +10,11 @@ async def websocket_endpoint(websocket: WebSocket):
     try:
         while True:
             # Wait for any message from React (or just keep connection open)
-            data = await websocket.receive_text()
+            # data = await websocket.receive_text()
+            pass
             # Echo back or handle logic
     except WebSocketDisconnect:
-        manager.disconnect(websocket)
+        await manager.disconnect(websocket)
 
 @router.get("/join")
 async def join_websocket():

@@ -1,10 +1,12 @@
 # app/main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from app.api.v1.api import api_router
 from app.websockets.connection_manager import socket_app
 # from app.models.user import User, Role
-import app.models
+# import app.models
 
 app = FastAPI(
     title="RPi IoT Gateway",
@@ -30,6 +32,13 @@ app.include_router(api_router, prefix="/api/v1")
 # 3. Mount Socket.IO
 app.mount("/ws", socket_app)
 
-@app.get("/")
-async def root():
-    return {"status": "online", "message": "Raspberry Pi IoT Gateway is running"}
+# 4. Mount static files (React assets)
+app.mount("/assets", StaticFiles(directory="app/static/assets"), name="assets")
+
+@app.get("/{path_param:path}")
+async def serve_react(path_param: str):
+    """
+    Serve the React app for all unmatched routes (SPA catch-all)
+    React Router will handle the routing on the client side
+    """
+    return FileResponse("app/static/index.html")

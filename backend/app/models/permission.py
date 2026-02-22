@@ -1,5 +1,4 @@
 from typing import Optional, List
-# from app.models.user import Role
 from sqlmodel import SQLModel, Field, Relationship
 
 
@@ -15,6 +14,6 @@ class Permission(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str = Field(index=True, unique=True)
 
-    roles: List["Role"] = Relationship(
+    roles: List["Role"] = Relationship( # type: ignore
         back_populates="permissions", link_model=RolePermission
     )

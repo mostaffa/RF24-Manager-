@@ -5,7 +5,7 @@ from app.models.user import Role, Permission
 from app.models.permission import RolePermission
 from app.schemas.role import RoleCreate, RoleRead
 from app.schemas.permission import PermissionRead
-from app.core.rbac import require_superuser, require_permission, require_permission_or_superuser
+from app.core.rbac import require_permission_or_superuser
 from app.websockets.connection_manager import emit
 
 router = APIRouter()
@@ -49,7 +49,8 @@ async def create_role(role_in: RoleCreate, db: Session = Depends(get_session)):
     db.refresh(db_role)
     await emit(
         "msg",
-        {"type": "role_created", "payload": db_role.dict()},
+        # {"type": "role_created", "payload": db_role.dict()},
+        {"type": "role_created", "payload": RoleRead.model_validate(db_role).model_dump()},
         room=build_role_rooms(db),
     )
     return db_role
@@ -94,7 +95,7 @@ async def update_role(role_id: int, role_in: RoleCreate, db: Session = Depends(g
     db.refresh(role)
     await emit(
         "msg",
-        {"type": "role_updated", "payload": role.dict()},
+        {"type": "role_updated", "payload": RoleRead.model_validate(role).model_dump()},
         room=build_role_rooms(db),
     )
     return role
@@ -115,7 +116,7 @@ async def delete_role(role_id: int, db: Session = Depends(get_session)):
     db.commit()
     await emit(
         "msg",
-        {"type": "role_deleted", "payload": {"role_id": role_id}},
+        {"type": "role_deleted", "payload": {"role": RoleRead.model_validate(role).model_dump()}},
         room=build_role_rooms(db),
     )
     return {"detail": "Role deleted"}
@@ -170,7 +171,8 @@ async def assign_permission_to_role(
         "msg",
         {
             "type": "role_permission_added",
-            "payload": {"role": role.dict(), "permission": permission.dict()},
+            "payload": {"role": RoleRead.model_validate(role).model_dump(), "permission": PermissionRead.model_validate(permission).model_dump()},
+            # "payload": {"role": role.dict(), "permission": permission.dict()},
         },
         room=build_role_rooms(db),
     )
@@ -201,12 +203,13 @@ async def remove_permission_from_role(
     db.commit()
     role = db.get(Role, role_id)
     permission = db.get(Permission, permission_id)
-    await emit(
-        "msg",
-        {
-            "type": "role_permission_removed",
-            "payload": {"role": role.dict(), "permission": permission.dict()},
-        },
-        room=build_role_rooms(db) + [f"role_{old_role.id}"],
-    )
+    if old_role and role and permission:
+        await emit(
+            "msg",
+            {
+                "type": "role_permission_removed",
+                "payload": {"role": RoleRead.model_validate(role).model_dump(), "permission": PermissionRead.model_validate(permission).model_dump()},
+            },
+            room=build_role_rooms(db) + [f"role_{old_role.id}"],
+        )
     return {"detail": "Permission removed"}
