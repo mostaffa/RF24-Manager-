@@ -8,6 +8,7 @@ import { useForm, Controller } from "react-hook-form"
 import FormControl from "@mui/material/FormControl"
 import TextField from "@mui/material/TextField"
 import type { UserCreate } from "../../../../api"
+import { ApiError } from "../../../../api"
 import { useGetUsersQuery } from "../../../../features/user/usersApiSlice"
 import { useAppSelector } from "../../../../app/hooks"
 import { selectUser } from "../../../../features/user/userSlice"
@@ -32,10 +33,10 @@ type UserFormProps = {
 const UserForm = ({ updateCurrentUser, userId, createNew }: UserFormProps) => {
   const currentUser = useAppSelector(selectUser)
   const permissions = useAppSelector(selectPermissions)
-  const canManagePermissions =
-    permissions?.includes("permission:update") ?? false
+  const hasRolesReadPerm: boolean = permissions?.includes("role:read") ?? false
+
   const { data: roles = [] } = useGetRolesQuery(undefined, {
-    skip: !canManagePermissions,
+    skip: !hasRolesReadPerm,
   })
   const { data: users = [] } = useGetUsersQuery(
     { skip: 0, limit: 100 },
@@ -46,7 +47,6 @@ const UserForm = ({ updateCurrentUser, userId, createNew }: UserFormProps) => {
   const user = updateCurrentUser
     ? currentUser
     : users.find(u => u.id === userId)
-  // const { data: roles } = permissions?.includes("permission:update") ? useGetRolesQuery(undefined) : { data: [] }
   const notifications = useNotifications()
   const { control, handleSubmit, getValues, setValue } = useForm<
     Omit<UserCreate, "confirm_password"> & { confirm_password: string }
@@ -102,12 +102,17 @@ const UserForm = ({ updateCurrentUser, userId, createNew }: UserFormProps) => {
         })
       }
     } catch (error) {
-      // Handle error (e.g., show an error message)
-      console.error("Error creating user:", error)
-      notifications.show("Error creating user", {
-        severity: "error",
-        autoHideDuration: 3000,
-      })
+      if (error instanceof ApiError) {
+        notifications.show(error.message, {
+          severity: "error",
+          autoHideDuration: 5000,
+        })
+      } else {
+        notifications.show("An unexpected error occurred", {
+          severity: "error",
+          autoHideDuration: 5000,
+        })
+      }
     }
   }
 
@@ -259,7 +264,7 @@ const UserForm = ({ updateCurrentUser, userId, createNew }: UserFormProps) => {
               )}
             />
           </FormControl>
-          {permissions?.includes("permission:update") && (
+          {hasRolesReadPerm && (
             <FormControl fullWidth sx={{ mb: 2 }}>
               <Controller
                 name="role_id"

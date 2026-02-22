@@ -1,14 +1,13 @@
 from app.models.permission import Permission
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
-from sqlalchemy.orm import selectinload
 from app.db.session import get_session
 from app.models.user import User
 from app.models.permission import RolePermission
 from app.schemas.user import UserCreate, UserRead
 from app.core.rbac import require_permission, require_ownership_or_permission_or_superuser
 from app.core.security import get_current_user, hash_password
-from app.websockets.connection_manager import sio
+from app.websockets.connection_manager import emit
 
 router = APIRouter()
 
@@ -52,11 +51,11 @@ async def create_user(
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
-    await sio.emit(
+    await emit(
         "msg",
         {
             "type": "user_created",
-            "payload": {"user": UserRead.from_orm(db_user).dict()},
+            "payload": {"user": UserRead.model_validate(db_user).model_dump()},
         },
         room=build_user_read_rooms(db),
     )
@@ -67,7 +66,7 @@ async def create_user(
              dependencies=[Depends(require_permission("user:read"))]
              )
 def read_user(user_id: int, db: Session = Depends(get_session)):
-    statement = select(User).where(User.id == user_id).options(selectinload(User.role))
+    statement = select(User).where(User.id == user_id)
     user = db.exec(statement).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -78,7 +77,7 @@ def read_user(user_id: int, db: Session = Depends(get_session)):
             dependencies=[Depends(require_permission("user:read"))]
             )
 def read_users(skip: int = 0, limit: int = 10, db: Session = Depends(get_session)):
-    statement = select(User).options(selectinload(User.role)).offset(skip).limit(limit)
+    statement = select(User).offset(skip).limit(limit)
     users = db.exec(statement).all()
     return users
 
@@ -91,7 +90,7 @@ async def delete_user(user_id: int, db: Session = Depends(get_session)):
         raise HTTPException(status_code=404, detail="User not found")
     db.delete(user)
     db.commit()
-    await sio.emit(
+    await emit(
         "msg",
         {
             "type": "user_deleted",
@@ -116,8 +115,8 @@ async def update_user(user_id: int, user_in: UserRead, user_request: User = Depe
     user.last_name = user_in.last_name
     old_role_id = user.role_id
     # if the user has'nt permission "permission:update" he cannot change his role, but if he has the permission or is superuser he can change his role
-    if user_request.has_permission("permission:update") or user_request.role.id == 1:
-        user.role_id = user_in.role.id if user_in.role else None
+    if user_request.has_permission("permission:update") or user_request.role_id == 1:
+        user.role_id = user_in.role.id if user_in.role else user.role_id
     # user.role_id = user_in.role.id if user_in.role else None
 
     db.add(user)
@@ -129,11 +128,11 @@ async def update_user(user_id: int, user_in: UserRead, user_request: User = Depe
             select(Permission).join(RolePermission).where(RolePermission.role_id == user.role_id)
         ).all()
         
-    await sio.emit(
+    await emit(
         "msg",
         {
             "type": "user_updated",
-            "payload": {"user": UserRead.from_orm(user).dict(), "permissions": [perm.name for perm in new_permissions]},
+            "payload": {"user": UserRead.model_validate(user).model_dump(), "permissions": [perm.name for perm in new_permissions]},
         },
         room=build_user_read_rooms(db) + ([f"role_{old_role_id}"] if old_role_id else []) + ([f"role_{user.role_id}"] if user.role_id else []),
     )

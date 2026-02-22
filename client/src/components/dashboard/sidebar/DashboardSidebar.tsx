@@ -7,8 +7,7 @@ import List from "@mui/material/List"
 import Toolbar from "@mui/material/Toolbar"
 import type {} from "@mui/material/themeCssVarsAugmentation"
 import ReportGmailerrorredIcon from "@mui/icons-material/ReportGmailerrorred"
-import ViewQuiltIcon from "@mui/icons-material/ViewQuilt"
-import LayersIcon from "@mui/icons-material/Layers"
+import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings"
 import { matchPath, useLocation } from "react-router"
 import DashboardSidebarContext from "../../../context/DashboardSidebarContext"
 import { DRAWER_WIDTH, MINI_DRAWER_WIDTH } from "../constants.ts"
@@ -17,7 +16,7 @@ import DashboardSidebarHeaderItem from "./headerItem/DashboardSidebarHeaderItem.
 import DashboardSidebarDividerItem from "./deviderItem/DashboardSidebarDividerItem"
 import PersonIcon from "@mui/icons-material/Person"
 import PeopleOutlineIcon from "@mui/icons-material/PeopleOutline"
-import ManageAccountsIcon from "@mui/icons-material/ManageAccounts"
+import GroupsIcon from "@mui/icons-material/Groups"
 import {
   getDrawerSxTransitionMixin,
   getDrawerWidthTransitionMixin,
@@ -45,7 +44,11 @@ export default function DashboardSidebar({
   container,
 }: DashboardSidebarProps) {
   const user = useAppSelector(selectUser)
-  const permissions = useAppSelector(selectPermissions)
+  const selectedPermissions = useAppSelector(selectPermissions)
+  const permissions = React.useMemo(
+    () => selectedPermissions ?? [],
+    [selectedPermissions],
+  )
   const dispatch = useAppDispatch()
   const theme = useTheme()
 
@@ -166,40 +169,27 @@ export default function DashboardSidebar({
               selected={!!matchPath("/me/*", pathname) || pathname === "/"}
             />
             <DashboardSidebarDividerItem />
-            <DashboardSidebarPageItem
+            {/* <DashboardSidebarPageItem
               id="layout"
               title="Layout"
               icon={<ViewQuiltIcon />}
               href="/layout"
               selected={!!matchPath("/layout/*", pathname)}
-            />
-            {permissions?.includes("user:read") && (
+            /> */}
+            {(permissions.includes("role:read") ||
+              permissions.includes("user:read") ||
+              permissions.includes("permission:read")) && (
               <>
-                <DashboardSidebarDividerItem />
-                <DashboardSidebarHeaderItem>Users</DashboardSidebarHeaderItem>
-
-                <DashboardSidebarPageItem
-                  id="users"
-                  title="Users"
-                  icon={<PeopleOutlineIcon />}
-                  href="/admin/users"
-                  selected={!!matchPath("/admin/users/*", pathname)}
-                />
-              </>
-            )}
-            {permissions?.includes("role:read") && (
-              <>
-                <DashboardSidebarDividerItem />
+                {/* <DashboardSidebarDividerItem /> */}
                 <DashboardSidebarHeaderItem>Admin</DashboardSidebarHeaderItem>
 
                 <DashboardSidebarPageItem
-                  id="roles"
-                  title="Roles & Permissions"
-                  icon={<ManageAccountsIcon />}
-                  // href="/admin/roles"
-                  selected={!!matchPath("/admin/roles", pathname)}
-                  defaultExpanded={!!matchPath("/admin/roles", pathname)}
-                  expanded={expandedItemIds.includes("roles")}
+                  id="administration"
+                  title="Administration"
+                  icon={<AdminPanelSettingsIcon />}
+                  selected={!!matchPath("/admin/*", pathname)}
+                  defaultExpanded={!!matchPath("/admin/", pathname)}
+                  expanded={expandedItemIds.includes("administration")}
                   nestedNavigation={
                     <List
                       dense
@@ -210,31 +200,46 @@ export default function DashboardSidebar({
                         minWidth: 240,
                       }}
                     >
-                      <DashboardSidebarPageItem
-                        id="allRoles"
-                        title="Roles"
-                        icon={<PeopleOutlineIcon />}
-                        href="/admin/roles"
-                        selected={!!matchPath("/admin/roles", pathname)}
-                      />
-                      <DashboardSidebarPageItem
-                        id="allPermissions"
-                        title="Permissions"
-                        icon={<ReportGmailerrorredIcon />}
-                        href="/admin/permissions"
-                        selected={!!matchPath("/admin/permissions/*", pathname)}
-                      />
+                      {permissions.includes("role:read") && (
+                        <DashboardSidebarPageItem
+                          id="allRoles"
+                          title="Roles"
+                          icon={<GroupsIcon />}
+                          href="/admin/roles"
+                          selected={!!matchPath("/admin/roles", pathname)}
+                        />
+                      )}
+                      {permissions.includes("user:read") && (
+                        <DashboardSidebarPageItem
+                          id="allUsers"
+                          title="Users"
+                          icon={<PeopleOutlineIcon />}
+                          href="/admin/users"
+                          selected={!!matchPath("/admin/users", pathname)}
+                        />
+                      )}
+                      {permissions.includes("permission:read") && (
+                        <DashboardSidebarPageItem
+                          id="allPermissions"
+                          title="Permissions"
+                          icon={<ReportGmailerrorredIcon />}
+                          href="/admin/permissions"
+                          selected={
+                            !!matchPath("/admin/permissions/*", pathname)
+                          }
+                        />
+                      )}
                     </List>
                   }
                 />
-
+                {/* 
                 <DashboardSidebarPageItem
                   id="integrations"
                   title="Integrations"
                   icon={<LayersIcon />}
                   href="/integrations"
                   selected={!!matchPath("/integrations", pathname)}
-                />
+                /> */}
               </>
             )}
 

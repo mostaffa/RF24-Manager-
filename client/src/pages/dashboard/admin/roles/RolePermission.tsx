@@ -21,6 +21,7 @@ const RolePermission: React.FC<{ roleId: number }> = ({ roleId }) => {
   const dispatch = useAppDispatch()
   const { status } = useSocket()
   const notifications = useNotifications()
+  const [disabled, setDisabled] = useState(false)
   const { data: rolePermissions, isLoading: isRolePermissionsLoading } =
     useGetRolePermissionsQuery(roleId)
   const { data: allPermissions, isLoading: isAllPermissionsLoading } =
@@ -85,6 +86,7 @@ const RolePermission: React.FC<{ roleId: number }> = ({ roleId }) => {
   const handleChange = useCallback(
     async (event: boolean, permission: PermissionRead) => {
       const permissionId = permission.id
+      setDisabled(true)
       try {
         if (event) {
           await RolesService.assignPermissionToRoleApiV1RolesRoleIdPermissionsPermissionIdPost(
@@ -97,6 +99,10 @@ const RolePermission: React.FC<{ roleId: number }> = ({ roleId }) => {
           if (status !== "connected") {
             updateView(roleId, permissionId, "role_permission_added")
           }
+          notifications.show("Permission added to role", {
+            severity: "success",
+            autoHideDuration: 3000,
+          })
         } else {
           await RolesService.removePermissionFromRoleApiV1RolesRoleIdPermissionsPermissionIdDelete(
             {
@@ -107,6 +113,10 @@ const RolePermission: React.FC<{ roleId: number }> = ({ roleId }) => {
           if (status !== "connected") {
             updateView(roleId, permissionId, "role_permission_removed")
           }
+          notifications.show("Permission removed from role", {
+            severity: "success",
+            autoHideDuration: 3000,
+          })
         }
       } catch (error) {
         console.error("Error toggling permission:", error)
@@ -114,6 +124,8 @@ const RolePermission: React.FC<{ roleId: number }> = ({ roleId }) => {
           severity: "error",
           autoHideDuration: 5000,
         })
+      } finally {
+        setDisabled(false)
       }
     },
     [roleId, notifications, updateView, status],
@@ -203,6 +215,7 @@ const RolePermission: React.FC<{ roleId: number }> = ({ roleId }) => {
                       {/* Display action part of permission */}
                     </InputLabel>
                     <Checkbox
+                      disabled={disabled}
                       checked={
                         rolePermissions?.some(rp => rp.id === permission.id) ??
                         false

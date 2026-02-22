@@ -97,6 +97,15 @@ export const SocketProvider = ({ children }: SocketProviderProps) => {
     }
   }, [user, WS_PATH])
 
+  const reconnect = () => {
+    if (socketRef.current && !socketRef.current.connected) {
+      // disconnect first
+      socketRef.current.disconnect()
+      // then reconnect
+      socketRef.current.connect()
+    }
+  }
+
   useEffect(() => {
     if (user && socketRef.current) {
       if (message) {
@@ -263,6 +272,10 @@ export const SocketProvider = ({ children }: SocketProviderProps) => {
               const updatedUser = message.payload as UserOut
               if (updatedUser.user.id === user.id) {
                 dispatch(setUser(updatedUser))
+                // if the role was changed, the socket must disconnected and reconnected again to the new updated role
+                if (updatedUser.user.role?.id !== user.role?.id) {
+                  reconnect()
+                }
               }
             }
             break
@@ -324,6 +337,7 @@ export const SocketProvider = ({ children }: SocketProviderProps) => {
       status,
       message,
       setMessage,
+      reconnect,
     }),
     [status, message],
   )

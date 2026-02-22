@@ -34,7 +34,9 @@ type ModifyRoles = {
 const Roles = () => {
   const permissions = useAppSelector(selectPermissions)
   // const user = useAppSelector(selectUser);
-  const { data: roles = [] } = useGetRolesQuery(undefined)
+  const { data: roles = [] } = useGetRolesQuery(undefined, {
+    skip: !permissions?.includes("role:read"),
+  })
   const { status } = useSocket()
   const dialogs = useDialogs()
   const dispatch = useAppDispatch()

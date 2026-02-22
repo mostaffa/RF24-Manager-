@@ -6,7 +6,7 @@ from app.models.permission import RolePermission
 from app.schemas.role import RoleCreate, RoleRead
 from app.schemas.permission import PermissionRead
 from app.core.rbac import require_superuser, require_permission, require_permission_or_superuser
-from app.websockets.connection_manager import sio
+from app.websockets.connection_manager import emit
 
 router = APIRouter()
 
@@ -47,7 +47,7 @@ async def create_role(role_in: RoleCreate, db: Session = Depends(get_session)):
     db.add(db_role)
     db.commit()
     db.refresh(db_role)
-    await sio.emit(
+    await emit(
         "msg",
         {"type": "role_created", "payload": db_role.dict()},
         room=build_role_rooms(db),
@@ -92,7 +92,7 @@ async def update_role(role_id: int, role_in: RoleCreate, db: Session = Depends(g
     db.add(role)
     db.commit()
     db.refresh(role)
-    await sio.emit(
+    await emit(
         "msg",
         {"type": "role_updated", "payload": role.dict()},
         room=build_role_rooms(db),
@@ -113,7 +113,7 @@ async def delete_role(role_id: int, db: Session = Depends(get_session)):
         raise HTTPException(status_code=404, detail="Role not found")
     db.delete(role)
     db.commit()
-    await sio.emit(
+    await emit(
         "msg",
         {"type": "role_deleted", "payload": {"role_id": role_id}},
         room=build_role_rooms(db),
@@ -166,7 +166,7 @@ async def assign_permission_to_role(
     db.refresh(role)
     db.refresh(permission)
 
-    await sio.emit(
+    await emit(
         "msg",
         {
             "type": "role_permission_added",
@@ -196,16 +196,17 @@ async def remove_permission_from_role(
     if not link:
         raise HTTPException(status_code=404, detail="Role permission not found")
 
+    old_role = db.get(Role, role_id)
     db.delete(link)
     db.commit()
     role = db.get(Role, role_id)
     permission = db.get(Permission, permission_id)
-    await sio.emit(
+    await emit(
         "msg",
         {
             "type": "role_permission_removed",
             "payload": {"role": role.dict(), "permission": permission.dict()},
         },
-        room=build_role_rooms(db),
+        room=build_role_rooms(db) + [f"role_{old_role.id}"],
     )
     return {"detail": "Permission removed"}

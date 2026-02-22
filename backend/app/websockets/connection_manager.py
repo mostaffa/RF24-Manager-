@@ -1,5 +1,7 @@
 from collections import defaultdict
-import socketio
+from collections.abc import Awaitable, Callable
+from typing import Any, DefaultDict, cast
+import socketio  # pyright: ignore[reportMissingTypeStubs]
 from http.cookies import SimpleCookie
 from app.db.session import get_session
 from app.core.security import get_current_user_from_token, extract_bearer_from_cookie_value
@@ -10,13 +12,24 @@ sio = socketio.AsyncServer(
     logger=False,
     )
 socket_app = socketio.ASGIApp(sio, socketio_path="/ws")
+sio_any: Any = sio
+socket_event = sio_any.event
+socket_disconnect_fn = cast(Callable[[str], Awaitable[None]], sio_any.disconnect)
+socket_save_session_fn = cast(
+    Callable[[str, dict[str, Any]], Awaitable[None]],
+    sio_any.save_session,
+)
+socket_enter_room_fn = cast(
+    Callable[[str, str], Awaitable[None]],
+    sio_any.enter_room,
+)
 
-_user_sids = defaultdict(set)
-_sid_user = {}
+_user_sids = cast(DefaultDict[int, set[str]], defaultdict(set))
+_sid_user: dict[str, int] = {}
 
 # connect event, if the user is authenticated, add them to a room based on their user ID or role
-@sio.event
-async def connect(sid, environ):
+@socket_event
+async def connect(sid: str, environ: dict[str, Any]):
     print(f"\u001b[32mSocket Connection attempt: {sid}\u001b[0m")
     token_cookie = None
     headers = environ.get("asgi.scope", {}).get("headers", [])
@@ -34,7 +47,7 @@ async def connect(sid, environ):
     # reject connection if no token cookie
     if not token_cookie:
         print(f"\u001b[31mConnection rejected (no token cookie): {sid}\u001b[0m")
-        await sio.disconnect(sid)
+        await socket_disconnect(sid)
         return False
     # get user info from token (you would implement this function to decode the JWT and fetch user info from DB)
     db = next(get_session())
@@ -44,23 +57,28 @@ async def connect(sid, environ):
     )
     if not user_info:
         print(f"\u001b[31mConnection rejected (invalid token): {sid}\u001b[0m")
-        await sio.disconnect(sid)
+        await socket_disconnect(sid)
+        return False
+    user_id = user_info.id
+    if user_id is None:
+        print(f"\u001b[31mConnection rejected (user id missing): {sid}\u001b[0m")
+        await socket_disconnect(sid)
         return False
     
     print(user_info)
     # if user is valid, you can join them to a room based on their user ID or role
-    await sio.save_session(sid, {"user_id": user_info.id})
+    await socket_save_session(sid, {"user_id": user_id})
     # join the user to his own room, his role room
-    await sio.enter_room(sid, f"user_{user_info.id}")
-    await sio.enter_room(sid, f"role_{user_info.role_id}")
-    _user_sids[user_info.id].add(sid)
-    _sid_user[sid] = user_info.id
-    print(f"\u001b[32mSocket Connected: {sid} (User ID: {user_info.id})\u001b[0m")
+    await socket_enter_room(sid, f"user_{user_id}")
+    await socket_enter_room(sid, f"role_{user_info.role_id}")
+    _user_sids[user_id].add(sid)
+    _sid_user[sid] = user_id
+    print(f"\u001b[32mSocket Connected: {sid} (User ID: {user_id})\u001b[0m")
     return True
 
 
-@sio.event
-async def disconnect(sid):
+@socket_event
+async def disconnect(sid: str):
     user_id = _sid_user.pop(sid, None)
     if user_id is None:
         return
@@ -69,11 +87,27 @@ async def disconnect(sid):
         _user_sids.pop(user_id, None)
 
 
-async def broadcast(event: str, data: dict) -> None:
-    await sio.emit(event, data)
+async def broadcast(event: str, data: dict[str, Any]) -> None:
+    await emit(event, data)
 
 
-async def disconnect_user(user_id) -> None:
+async def emit(event: str, data: dict[str, Any], room: str | list[str] | None = None) -> None:
+    await cast(Any, sio).emit(event, data, room=room)
+
+
+async def socket_disconnect(sid: str) -> None:
+    await socket_disconnect_fn(sid)
+
+
+async def socket_save_session(sid: str, session: dict[str, Any]) -> None:
+    await socket_save_session_fn(sid, session)
+
+
+async def socket_enter_room(sid: str, room: str) -> None:
+    await socket_enter_room_fn(sid, room)
+
+
+async def disconnect_user(user_id: int) -> None:
     sids = list(_user_sids.get(user_id, []))
     for sid in sids:
-        await sio.disconnect(sid)
+        await socket_disconnect(sid)

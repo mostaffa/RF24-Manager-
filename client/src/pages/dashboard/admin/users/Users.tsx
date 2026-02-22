@@ -17,7 +17,7 @@ import {
 } from "../../../../features/user/userSlice"
 import ButtonGroup from "@mui/material/ButtonGroup"
 import type { UserRead } from "../../../../api"
-import { UsersService } from "../../../../api"
+import { UsersService, ApiError } from "../../../../api"
 
 const UserForm = React.lazy(() => import("./UserForm"))
 
@@ -56,7 +56,7 @@ const Users = () => {
   const handleDeleteUser = useCallback(
     async (user: UserRead) => {
       const confirm = await dialogs.confirm(
-        <Typography variant="body1">
+        <Typography variant="body1" p={2}>
           Are you sure you want to delete {user.username}? This action cannot be
           undone.
         </Typography>,
@@ -76,11 +76,17 @@ const Users = () => {
             autoHideDuration: 3000,
           })
         } catch (error) {
-          console.error("Error deleting user:", error)
-          notifications.show("Error deleting user", {
-            severity: "error",
-            autoHideDuration: 3000,
-          })
+          if (error instanceof ApiError) {
+            notifications.show(error.message, {
+              severity: "error",
+              autoHideDuration: 5000,
+            })
+          } else {
+            notifications.show("An unexpected error occurred", {
+              severity: "error",
+              autoHideDuration: 5000,
+            })
+          }
         }
       }
     },

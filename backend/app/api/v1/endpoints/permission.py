@@ -6,7 +6,7 @@ from app.models.permission import RolePermission
 from app.schemas.permission import PermissionCreate, PermissionRead
 from app.core.rbac import require_permission, require_superuser
 from app.core.security import get_current_user
-from app.websockets.connection_manager import sio
+from app.websockets.connection_manager import emit
 
 router = APIRouter()
 
@@ -56,7 +56,7 @@ async def create_permission(permission_in: PermissionCreate, db: Session = Depen
             )
             db.commit()
 
-    await sio.emit(
+    await emit(
         "msg",
         {"type": "permission_created", "payload": db_permission.dict()},
         room=build_role_rooms(superuser_role),
@@ -102,7 +102,7 @@ async def update_permission(permission_id: int, permission_in: PermissionCreate,
     db.commit()
     db.refresh(permission)
     superuser_role = get_superuser_role(db)
-    await sio.emit(
+    await emit(
         "msg",
         {"type": "permission_updated", "payload": permission.dict()},
         room=build_role_rooms(superuser_role),
@@ -121,7 +121,7 @@ async def delete_permission(permission_id: int, db: Session = Depends(get_sessio
     db.delete(permission)
     db.commit()
     superuser_role = get_superuser_role(db)
-    await sio.emit(
+    await emit(
         "msg",
         {"type": "permission_deleted", "payload": {"id": permission_id}},
         room=build_role_rooms(superuser_role),
